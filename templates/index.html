@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Фитнес-клуб - Демо</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Фитнес-клуб - Демонстрация БД</h1>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="menu">
+            <h2>Основные функции:</h2>
+            <ul>
+                <li><a href="{{ url_for('clients') }}">👥 Просмотр клиентов</a></li>
+                <li><a href="{{ url_for('add_client') }}">➕ Добавить клиента</a></li>
+                <li><a href="{{ url_for('subscriptions') }}">🎫 Типы абонементов</a></li>
+                <li><a href="{{ url_for('buy_subscription') }}">💰 Купить абонемент</a></li>
+                <li><a href="{{ url_for('trainings') }}">🏋️ Расписание тренировок</a></li>
+                <li><a href="{{ url_for('demo_login') }}">🔐 Демо входа (заглушка)</a></li>
+            </ul>
+            
+            <h2>Описание БД:</h2>
+            <p>В этом демо-приложении показаны основные таблицы:</p>
+            <ul>
+                <li><strong>clients</strong> - клиенты фитнес-клуба</li>
+                <li><strong>subscriptions</strong> - типы абонементов</li>
+                <li><strong>subscription_purchase</strong> - покупки абонементов</li>
+                <li><strong>training_sessions</strong> - тренировочные занятия</li>
+                <li><strong>trainers</strong> - тренеры</li>
+                <li><strong>bookings</strong> - записи на тренировки</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

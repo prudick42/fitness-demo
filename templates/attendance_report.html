@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет по посещаемости</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Отчет по посещаемости</h1>
+        <a href="{{ url_for('dashboard') }}">← Назад в панель управления</a>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="report-section">
+            <h3>🏋️ Популярность типов тренировок</h3>
+            {% if training_stats %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Тип тренировки</th>
+                        <th>Количество занятий</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in training_stats %}
+                    <tr>
+                        <td>{{ stat[0] }}</td>
+                        <td>{{ stat[1] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Нет данных о тренировках</p>
+            {% endif %}
+        </div>
+        
+        <div class="report-section">
+            <h3>👥 Самые активные клиенты</h3>
+            {% if active_clients %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Куплено абонементов</th>
+                        <th>Общая сумма покупок</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in active_clients %}
+                    <tr>
+                        <td>{{ client[0] }}</td>
+                        <td>{{ client[1] }}</td>
+                        <td>{{ "%.2f"|format(client[2]) }} ₽</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>Нет данных о клиентах</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить клиента</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Добавление нового клиента</h1>
+        <a href="{{ url_for('clients') }}">← Назад к списку</a>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label for="full_name">ФИО:</label>
+                <input type="text" id="full_name" name="full_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Телефон (формат: +7XXXXXXXXXX):</label>
+                <input type="tel" id="phone" name="phone" pattern="^\+7[0-9]{10}$" required>
+                <small>Пример: +79991234567</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="birth_date">Дата рождения:</label>
+                <input type="date" id="birth_date" name="birth_date">
+                <small>Клиент должен быть старше 16 лет</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="gender">Пол:</label>
+                <select id="gender" name="gender" required>
+                    <option value="М">Мужской</option>
+                    <option value="Ж">Женский</option>
+                </select>
+            </div>
+            
+            <button type="submit">Добавить клиента</button>
+        </form>
+    </div>
+</body>
+</html>

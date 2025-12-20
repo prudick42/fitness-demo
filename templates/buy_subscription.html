@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Покупка абонемента</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Покупка абонемента</h1>
+        <a href="{{ url_for('subscriptions') }}">← Назад к абонементам</a>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label for="client_id">Клиент:</label>
+                <select id="client_id" name="client_id" required>
+                    <option value="">Выберите клиента</option>
+                    {% for client in clients %}
+                    <option value="{{ client[0] }}">{{ client[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="subscription_id">Абонемент:</label>
+                <select id="subscription_id" name="subscription_id" required>
+                    <option value="">Выберите абонемент</option>
+                    {% for sub in subscriptions %}
+                    <option value="{{ sub[0] }}">{{ sub[1] }} - {{ "%.2f"|format(sub[2]) }} ₽</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="payment_method">Способ оплаты:</label>
+                <select id="payment_method" name="payment_method" required>
+                    <option value="наличные">Наличные</option>
+                    <option value="карта">Карта</option>
+                    <option value="онлайн">Онлайн</option>
+                </select>
+            </div>
+            
+            <button type="submit">Оформить покупку</button>
+        </form>
+    </div>
+</body>
+</html>

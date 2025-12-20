@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Абонементы</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Типы абонементов</h1>
+        <a href="{{ url_for('dashboard') }}">← Назад в панель управления</a>
+        
+        {% if session.role in ['admin', 'client'] %}
+        <a href="{{ url_for('buy_subscription') }}" style="float: right;">💰 Купить абонемент</a>
+        {% endif %}
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Тип абонемента</th>
+                    <th>Цена</th>
+                    <th>Длительность (дней)</th>
+                    <th>Макс. посещений</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subscriptions %}
+                <tr>
+                    <td>{{ sub[0] }}</td>
+                    <td>{{ sub[1] }}</td>
+                    <td>{{ "%.2f"|format(sub[2]) }} ₽</td>
+                    <td>{{ sub[3] }}</td>
+                    <td>{{ sub[4] or 'безлимит' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <p>Всего типов абонементов: {{ subscriptions|length }}</p>
+    </div>
+</body>
+</html>

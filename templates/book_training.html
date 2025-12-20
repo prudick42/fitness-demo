@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Запись на тренировку</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Запись на тренировку</h1>
+        <a href="{{ url_for('bookings_list') }}">← Назад к записям</a>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="booking-form">
+            <form method="POST" class="form">
+                {% if session.role == 'admin' %}
+                <div class="form-group">
+                    <label for="client_id">Клиент:</label>
+                    <select id="client_id" name="client_id" required>
+                        <option value="">Выберите клиента</option>
+                        {% for client in clients %}
+                        <option value="{{ client[0] }}">{{ client[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <div class="form-group">
+                    <label for="client_id">Клиент:</label>
+                    <select id="client_id" name="client_id" required>
+                        {% for client in clients %}
+                        <option value="{{ client[0] }}" selected>{{ client[1] }}</option>
+                        {% endfor %}
+                    </select>
+                    <small>Вы записываетесь как текущий клиент</small>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="session_id">Тренировка:</label>
+                    <select id="session_id" name="session_id" required>
+                        <option value="">Выберите тренировку</option>
+                        {% for training in trainings %}
+                        <option value="{{ training[0] }}">
+                            {{ training[1] }} {{ training[2] }} - {{ training[3] }} (тренер: {{ training[4] }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>Показаны только будущие тренировки</small>
+                </div>
+                
+                <div class="form-info">
+                    <h3>Условия записи:</h3>
+                    <ul>
+                        <li>Для записи нужен активный абонемент</li>
+                        <li>Нельзя записаться на одну тренировку дважды</li>
+                        <li>Запись можно отменить в любой момент</li>
+                    </ul>
+                </div>
+                
+                <button type="submit">Записаться на тренировку</button>
+            </form>
+        </div>
+        
+        {% if trainings %}
+        <div class="trainings-preview">
+            <h3>Доступные тренировки:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Время</th>
+                        <th>Тип</th>
+                        <th>Тренер</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for training in trainings %}
+                    <tr>
+                        <td>{{ training[1] }}</td>
+                        <td>{{ training[2] }}</td>
+                        <td>{{ training[3] }}</td>
+                        <td>{{ training[4] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert">
+            Нет доступных тренировок для записи. Добавьте тренировки в расписание.
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

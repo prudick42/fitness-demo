@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления - {{ role|capitalize }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Фитнес-клуб - Панель управления</h1>
+            <div class="user-info">
+                Вы вошли как: 
+                <span class="role-badge role-{{ role }}">{{ role|upper }}</span>
+                - {{ session.display_name }}
+                <a href="{{ url_for('logout') }}" class="btn-logout">Выйти</a>
+            </div>
+        </header>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <nav class="nav">
+            <h2>Меню:</h2>
+            <ul>
+                {% if role in ['admin', 'manager'] %}
+                <li><a href="{{ url_for('clients') }}">👥 Клиенты</a></li>
+                {% endif %}
+                
+                {% if role == 'admin' %}
+                <li><a href="{{ url_for('add_client') }}">➕ Добавить клиента</a></li>
+                {% endif %}
+                
+                {% if role in ['admin', 'manager'] %}
+                <li><a href="{{ url_for('trainers_list') }}">👨‍🏫 Тренеры</a></li>
+                {% endif %}
+                
+                {% if role == 'admin' %}
+                <li><a href="{{ url_for('add_trainer') }}">➕ Добавить тренера</a></li>
+                {% endif %}
+                
+                <li><a href="{{ url_for('subscriptions') }}">🎫 Абонементы</a></li>
+                
+                {% if role in ['admin', 'client'] %}
+                <li><a href="{{ url_for('buy_subscription') }}">💰 Купить абонемент</a></li>
+                {% endif %}
+                
+                <li><a href="{{ url_for('trainings') }}">🏋️ Тренировки</a></li>
+                
+                {% if role == 'admin' %}
+                <li><a href="{{ url_for('add_training') }}">➕ Добавить тренировку</a></li>
+                {% endif %}
+                
+                <!-- НОВЫЕ ПУНКТЫ МЕНЮ ДЛЯ ЗАПИСЕЙ -->
+                {% if role in ['admin', 'client', 'trainer'] %}
+                <li><a href="{{ url_for('bookings_list') }}">📝 Мои записи</a></li>
+                {% endif %}
+                
+                {% if role in ['admin', 'client'] %}
+                <li><a href="{{ url_for('book_training') }}">➕ Записаться на тренировку</a></li>
+                {% endif %}
+                
+                {% if role in ['admin', 'manager'] %}
+                <li><a href="{{ url_for('financial_report') }}">📊 Финансовый отчет</a></li>
+                <li><a href="{{ url_for('attendance_report') }}">📈 Отчет по посещаемости</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <h2>Панель управления - {{ role|capitalize }}</h2>
+            
+            {% if role == 'admin' %}
+            <div class="stats">
+                <h3>📊 Статистика системы:</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Клиентов</h4>
+                        <p class="stat-number">{{ data.clients_count }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Тренеров</h4>
+                        <p class="stat-number">{{ data.trainers_count }}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Тренировок</h4>
+                        <p class="stat-number">{{ data.trainings_count }}</p>
+                    </div>
+                </div>
+                
+                {% if data.recent_clients %}
+                <div class="recent-section">
+                    <h4>Последние клиенты:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>ФИО</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in data.recent_clients %}
+                            <tr>
+                                <td>{{ client[0] }}</td>
+                                <td>{{ client[1] }}</td>
+                                <td>{{ client[2] }}</td>
+                                <td>{{ client[3] or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% elif role == 'client' and data.client %}
+            <div class="client-profile">
+                <h3>👤 Ваш профиль:</h3>
+                <div class="profile-card">
+                    <p><strong>ФИО:</strong> {{ data.client.name }}</p>
+                    <p><strong>Телефон:</strong> {{ data.client.phone }}</p>
+                    <p><strong>Email:</strong> {{ data.client.email or 'Не указан' }}</p>
+                    <p><strong>Дата рождения:</strong> {{ data.client.birth_date or 'Не указана' }}</p>
+                    <p><strong>Пол:</strong> {{ data.client.gender }}</p>
+                    
+                    {% if data.subscription %}
+                    <div class="subscription-info">
+                        <h4>🎫 Активный абонемент:</h4>
+                        <p><strong>Тип:</strong> {{ data.subscription.type }}</p>
+                        <p><strong>Цена:</strong> {{ data.subscription.price }} ₽</p>
+                        <p><strong>Дата покупки:</strong> {{ data.subscription.date }}</p>
+                        <p><strong>Способ оплаты:</strong> {{ data.subscription.method }}</p>
+                        <p><strong>Длительность:</strong> {{ data.subscription.duration }} дней</p>
+                    </div>
+                    {% else %}
+                    <div class="no-subscription">
+                        <p>У вас нет активного абонемента.</p>
+                        <a href="{{ url_for('buy_subscription') }}" class="btn">Купить абонемент</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% elif role == 'trainer' %}
+            <div class="trainer-info">
+                <h3>👨‍🏫 Панель тренера</h3>
+                
+                {% if data.trainer %}
+                <div class="profile-card">
+                    <p><strong>ФИО:</strong> {{ data.trainer.name }}</p>
+                    <p><strong>Специализация:</strong> {{ data.trainer.specialization }}</p>
+                    <p><strong>Опыт работы:</strong> {{ data.trainer.experience }} лет</p>
+                </div>
+                
+                {% if data.upcoming_trainings %}
+                <div class="trainings-section">
+                    <h4>📅 Ближайшие тренировки:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Время</th>
+                                <th>Тип</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for training in data.upcoming_trainings %}
+                            <tr>
+                                <td>{{ training[0] }}</td>
+                                <td>{{ training[1] }}</td>
+                                <td>{{ training[2] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p>На ближайшее время тренировок не запланировано.</p>
+                {% endif %}
+                
+                {% else %}
+                <p>Информация о тренере не найдена.</p>
+                {% endif %}
+                
+                <div class="quick-links">
+                    <a href="{{ url_for('trainings') }}" class="btn">Посмотреть все тренировки</a>
+                    <a href="{{ url_for('bookings_list') }}" class="btn">Просмотреть записи</a>
+                </div>
+            </div>
+            
+            {% elif role == 'manager' %}
+            <div class="manager-info">
+                <h3>📊 Панель менеджера</h3>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Общая выручка</h4>
+                        <p class="stat-number">{{ "%.2f"|format(data.total_revenue) }} ₽</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Всего продаж</h4>
+                        <p class="stat-number">{{ data.total_sales }}</p>
+                    </div>
+                </div>
+                
+                {% if data.subscription_stats %}
+                <div class="report-preview">
+                    <h4>📈 Продажи по типам абонементов:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Тип абонемента</th>
+                                <th>Продано</th>
+                                <th>Выручка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in data.subscription_stats %}
+                            <tr>
+                                <td>{{ stat[0] }}</td>
+                                <td>{{ stat[1] }}</td>
+                                <td>{{ "%.2f"|format(stat[2]) }} ₽</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <div class="quick-links">
+                    <a href="{{ url_for('financial_report') }}" class="btn">Подробный финансовый отчет</a>
+                    <a href="{{ url_for('attendance_report') }}" class="btn">Отчет по посещаемости</a>
+                </div>
+            </div>
+            
+            {% endif %}
+        </main>
+        
+        <footer class="footer">
+            <p>Демо-версия системы управления фитнес-клубом | База данных: PostgreSQL</p>
+        </footer>
+    </div>
+</body>
+</html>
