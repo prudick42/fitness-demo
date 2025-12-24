@@ -479,7 +479,6 @@ a:hover {
     padding: 10px;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
     .container {
         padding: 15px;

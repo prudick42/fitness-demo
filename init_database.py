@@ -18,7 +18,6 @@ def init_database():
         
         print("🔄 Очистка существующих данных...")
         
-        # Очищаем таблицы в правильном порядке (сначала дочерние, потом родительские)
         cursor.execute("DELETE FROM bookings;")
         cursor.execute("DELETE FROM training_sessions;")
         cursor.execute("DELETE FROM subscription_purchase;")
@@ -28,7 +27,6 @@ def init_database():
         
         print("✅ Данные очищены")
         
-        # Добавляем тренеров
         print("👨‍🏫 Добавляем тренеров...")
         cursor.execute("""
             INSERT INTO trainers (trainer_name, specialization, experience) VALUES
@@ -41,7 +39,6 @@ def init_database():
         trainer_ids = cursor.fetchall()
         print(f"✅ Добавлены тренеры с id: {[id[0] for id in trainer_ids]}")
         
-        # Добавляем абонементы
         print("🎫 Добавляем типы абонементов...")
         cursor.execute("""
             INSERT INTO subscriptions (subscription_type, price, duration_days, max_visits) VALUES
@@ -54,7 +51,6 @@ def init_database():
         subscription_ids = cursor.fetchall()
         print(f"✅ Добавлены абонементы с id: {[id[0] for id in subscription_ids]}")
         
-        # Добавляем клиентов
         print("👥 Добавляем клиентов...")
         cursor.execute("""
             INSERT INTO clients (full_name, phone, email, birth_date, gender) VALUES
@@ -67,7 +63,6 @@ def init_database():
         client_ids = cursor.fetchall()
         print(f"✅ Добавлены клиенты с id: {[id[0] for id in client_ids]}")
         
-        # Добавляем тренировки
         print("🏋️ Добавляем тренировки...")
         today = datetime.now().date()
         cursor.execute("""
@@ -83,7 +78,6 @@ def init_database():
         training_ids = cursor.fetchall()
         print(f"✅ Добавлены тренировки с id: {[id[0] for id in training_ids]}")
         
-        # Добавляем покупки абонементов
         print("💰 Добавляем покупки абонементов...")
         cursor.execute("""
             INSERT INTO subscription_purchase (id_client, id_subscription, payment_amount, payment_date, payment_method) VALUES
@@ -99,7 +93,6 @@ def init_database():
         conn.commit()
         print("🎉 База данных успешно инициализирована!")
         
-        # Покажем итоговую статистику
         print("\n📊 Статистика базы данных:")
         cursor.execute("SELECT COUNT(*) FROM trainers;")
         print(f"Тренеров: {cursor.fetchone()[0]}")

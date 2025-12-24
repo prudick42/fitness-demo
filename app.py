@@ -6,7 +6,6 @@ from functools import wraps
 app = Flask(__name__)
 app.secret_key = 'dev-secret-key-123'
 
-# Маппинг ролей пользователей PostgreSQL
 USER_ROLES = {
     'admin_user': 'admin',
     'client_user': 'client', 
@@ -14,7 +13,6 @@ USER_ROLES = {
     'manager_user': 'manager'
 }
 
-# Базовые настройки подключения (для проверки пользователей)
 BASE_DB_CONFIG = {
     'host': 'localhost',
     'port': '5433',
@@ -24,17 +22,14 @@ BASE_DB_CONFIG = {
 def authenticate_postgres_user(username, password):
     """Аутентификация через подключение к PostgreSQL под указанным пользователем"""
     try:
-        # Пробуем подключиться как указанный пользователь
         config = BASE_DB_CONFIG.copy()
         config['user'] = username
         config['password'] = password
         
         conn = psycopg2.connect(**config)
         
-        # Если подключение успешно - пользователь существует и пароль верный
         conn.close()
         
-        # Возвращаем роль пользователя
         return USER_ROLES.get(username)
         
     except Error:
@@ -43,8 +38,6 @@ def authenticate_postgres_user(username, password):
 def get_db_connection():
     """Создание подключения к БД для работы приложения"""
     try:
-        # Используем admin_user для всех операций в приложении
-        # (так как у него есть права на все таблицы)
         config = BASE_DB_CONFIG.copy()
         config['user'] = 'admin_user'
         config['password'] = '123'
@@ -55,7 +48,6 @@ def get_db_connection():
         print(f"❌ Ошибка подключения к БД: {e}")
         return None
 
-# Декоратор для проверки роли
 def role_required(required_role):
     def decorator(f):
         @wraps(f)
@@ -86,22 +78,18 @@ def login():
             flash('Введите логин и пароль')
             return render_template('login.html')
         
-        # Пробуем аутентифицировать пользователя
         role = authenticate_postgres_user(username, password)
         
         if role:
-            # Сохраняем данные в сессии
             session['username'] = username
             session['role'] = role
             
-            # Получаем дополнительную информацию о пользователе
             conn = get_db_connection()
             if conn:
                 cur = conn.cursor()
                 
                 try:
                     if role == 'client':
-                        # Для клиента получаем информацию о первом клиенте
                         cur.execute("SELECT id_client, full_name FROM clients LIMIT 1")
                         client_data = cur.fetchone()
                         if client_data:
@@ -111,7 +99,6 @@ def login():
                             session['display_name'] = username
                             
                     elif role == 'trainer':
-                        # Для тренера получаем информацию о первом тренере
                         cur.execute("SELECT id_trainer, trainer_name FROM trainers LIMIT 1")
                         trainer_data = cur.fetchone()
                         if trainer_data:
@@ -121,7 +108,6 @@ def login():
                             session['display_name'] = username
                             
                     else:
-                        # Для admin и manager
                         session['display_name'] = username
                         
                 except Error as e:
@@ -154,7 +140,6 @@ def dashboard():
     
     role = session['role']
     
-    # Получаем данные для dashboard в зависимости от роли
     conn = get_db_connection()
     if not conn:
         flash('Ошибка подключения к базе данных')
@@ -165,7 +150,6 @@ def dashboard():
     
     try:
         if role == 'admin':
-            # Статистика для администратора
             cur.execute("SELECT COUNT(*) FROM clients")
             data['clients_count'] = cur.fetchone()[0]
             
@@ -175,12 +159,10 @@ def dashboard():
             cur.execute("SELECT COUNT(*) FROM training_sessions")
             data['trainings_count'] = cur.fetchone()[0]
             
-            # Последние 5 клиентов
             cur.execute("SELECT * FROM clients ORDER BY id_client DESC LIMIT 5")
             data['recent_clients'] = cur.fetchall()
             
         elif role == 'client':
-            # Для клиента используем первый ID клиента (для демо)
             client_id = session.get('user_id', 1)
             
             cur.execute("""
@@ -225,7 +207,6 @@ def dashboard():
                     }
         
         elif role == 'trainer':
-            # Для тренера используем первый ID тренера (для демо)
             trainer_id = session.get('user_id', 1)
             
             cur.execute("""
@@ -282,11 +263,6 @@ def dashboard():
     
     return render_template('dashboard.html', role=role, data=data)
 
-# ВСЕ ОСТАЛЬНЫЕ МАРШРУТЫ (clients, trainers, subscriptions, bookings и т.д.)
-# ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ, КАК В ПРЕДЫДУЩЕЙ ВЕРСИИ
-# Просто скопируйте их из вашего текущего app.py
-
-# Маршруты для управления клиентами
 @app.route('/clients')
 @role_required(['admin', 'manager'])
 def clients():
@@ -297,7 +273,7 @@ def clients():
         return redirect(url_for('dashboard'))
     
     cur = conn.cursor()
-    cur.execute('SELECT * FROM clients ORDER BY id_client')
+    cur.execute('SELECT * FROM clients ORDER BY full_name')
     clients_data = cur.fetchall()
     
     cur.close()
@@ -342,7 +318,6 @@ def add_client():
     
     return render_template('add_client.html')
 
-# Маршруты для тренеров
 @app.route('/trainers')
 @role_required(['admin', 'manager'])
 def trainers_list():
@@ -396,7 +371,6 @@ def add_trainer():
     
     return render_template('add_trainer.html')
 
-# Маршруты для абонементов
 @app.route('/subscriptions')
 @role_required(['admin', 'client', 'manager', 'trainer'])
 def subscriptions():
@@ -426,11 +400,9 @@ def buy_subscription():
     
     cur = conn.cursor()
     
-    # Для клиента показываем только его
     if session['role'] == 'client':
         cur.execute("SELECT id_client, full_name FROM clients ORDER BY id_client LIMIT 1")
     else:
-        # Для админа показываем всех клиентов
         cur.execute('SELECT id_client, full_name FROM clients ORDER BY full_name')
     
     clients_data = cur.fetchall()
@@ -444,7 +416,6 @@ def buy_subscription():
         payment_method = request.form['payment_method']
         
         try:
-            # Получаем цену абонемента
             cur.execute('SELECT price FROM subscriptions WHERE id_subscription = %s', (subscription_id,))
             price_result = cur.fetchone()
             if price_result:
@@ -453,7 +424,6 @@ def buy_subscription():
                 flash('Абонемент не найден')
                 return redirect(url_for('buy_subscription'))
             
-            # Добавляем покупку
             cur.execute("""
                 INSERT INTO subscription_purchase 
                 (id_client, id_subscription, payment_amount, payment_method)
@@ -479,7 +449,6 @@ def buy_subscription():
                           clients=clients_data, 
                           subscriptions=subscriptions_data)
 
-# Маршруты для тренировок
 @app.route('/trainings')
 @role_required(['admin', 'client', 'trainer', 'manager'])
 def trainings():
@@ -516,11 +485,9 @@ def add_training():
     cur = conn.cursor()
     
     try:
-        # Получаем список тренеров для выбора
         cur.execute('SELECT id_trainer, trainer_name FROM trainers ORDER BY trainer_name')
         trainers = cur.fetchall()
         
-        # Проверяем, есть ли тренеры
         if not trainers:
             flash('Нет тренеров. Сначала добавьте тренеров!')
             return redirect(url_for('dashboard'))
@@ -531,7 +498,6 @@ def add_training():
             training_type = request.form['training_type']
             id_trainer = request.form['id_trainer']
             
-            # Проверяем, что тренер существует
             cur.execute("SELECT id_trainer FROM trainers WHERE id_trainer = %s", (id_trainer,))
             if not cur.fetchone():
                 flash('Выбранный тренер не существует!')
@@ -558,7 +524,6 @@ def add_training():
     
     return render_template('add_training.html', trainers=trainers)
 
-# Маршруты для записей на тренировки
 @app.route('/bookings')
 @role_required(['admin', 'client', 'trainer'])
 def bookings_list():
@@ -570,9 +535,7 @@ def bookings_list():
     
     cur = conn.cursor()
     
-    # В зависимости от роли показываем разные записи
     if session['role'] == 'client':
-        # Для клиента показываем только его записи (первого клиента)
         cur.execute("SELECT id_client FROM clients LIMIT 1")
         client_id_result = cur.fetchone()
         if client_id_result:
@@ -601,7 +564,6 @@ def bookings_list():
         """, (client_id,))
         
     elif session['role'] == 'trainer':
-        # Для тренера показываем записи на его тренировки (первого тренера)
         cur.execute("SELECT id_trainer FROM trainers LIMIT 1")
         trainer_id_result = cur.fetchone()
         if trainer_id_result:
@@ -630,7 +592,6 @@ def bookings_list():
         """, (trainer_id,))
     
     else:
-        # Для администратора показываем все записи
         cur.execute("""
             SELECT 
                 b.id_booking,
@@ -667,7 +628,7 @@ def book_training():
     
     cur = conn.cursor()
     
-    # Получаем список тренировок (только будущие)
+    # Список тренировок (только будущие)
     cur.execute("""
         SELECT ts.id_session, ts.session_date, ts.session_time, 
                ts.training_type, t.trainer_name
@@ -678,12 +639,10 @@ def book_training():
     """)
     trainings = cur.fetchall()
     
-    # Получаем список клиентов (для администратора) и их активные покупки
     if session['role'] == 'admin':
         cur.execute('SELECT id_client, full_name FROM clients ORDER BY full_name')
         clients = cur.fetchall()
     else:
-        # Для клиента показываем только его
         cur.execute("SELECT id_client, full_name FROM clients LIMIT 1")
         clients = cur.fetchall()
     
@@ -691,12 +650,13 @@ def book_training():
         client_id = request.form['client_id']
         session_id = request.form['session_id']
         
-        # Проверяем, есть ли у клиента активная покупка абонемента
+        # Есть ли у клиента активная покупка абонемента
         cur.execute("""
-            SELECT id_purchase 
-            FROM subscription_purchase 
-            WHERE id_client = %s 
-            ORDER BY payment_date DESC 
+            SELECT sp.id_purchase, s.max_visits
+            FROM subscription_purchase sp
+            JOIN subscriptions s ON sp.id_subscription = s.id_subscription
+            WHERE sp.id_client = %s 
+            ORDER BY sp.payment_date DESC 
             LIMIT 1
         """, (client_id,))
         
@@ -706,7 +666,23 @@ def book_training():
             flash('У клиента нет активного абонемента! Сначала купите абонемент.')
             return redirect(url_for('book_training'))
         
-        id_purchase = purchase_result[0]
+        id_purchase, max_visits = purchase_result
+        
+        # Проверяем лимит посещений, если он есть
+        if max_visits:
+            cur.execute("""
+                SELECT COUNT(*) 
+                FROM bookings b
+                JOIN subscription_purchase sp ON b.id_purchase = sp.id_purchase
+                WHERE sp.id_purchase = %s 
+                  AND b.booking_status = 'записан'
+            """, (id_purchase,))
+            
+            used_visits = cur.fetchone()[0]
+            
+            if used_visits >= max_visits:
+                flash(f'Превышен лимит посещений по абонементу! Максимум: {max_visits} посещений')
+                return redirect(url_for('book_training'))
         
         try:
             # Проверяем, не записан ли уже клиент на эту тренировку
@@ -714,7 +690,7 @@ def book_training():
                 SELECT COUNT(*) 
                 FROM bookings b
                 JOIN subscription_purchase sp ON b.id_purchase = sp.id_purchase
-                WHERE sp.id_client = %s AND b.id_session = %s
+                WHERE sp.id_client = %s AND b.id_session = %s AND b.booking_status = 'записан'
             """, (client_id, session_id))
             
             already_booked = cur.fetchone()[0]
@@ -733,7 +709,10 @@ def book_training():
             flash('Запись на тренировку успешно создана!')
             
         except Error as e:
-            flash(f'Ошибка при записи на тренировку: {e}')
+            if 'Превышен лимит посещений' in str(e):
+                flash(str(e))
+            else:
+                flash(f'Ошибка при записи на тренировку: {e}')
             conn.rollback()
         finally:
             cur.close()
@@ -760,9 +739,7 @@ def cancel_booking(booking_id):
     cur = conn.cursor()
     
     try:
-        # Проверяем, может ли текущий пользователь отменить эту запись
         if session['role'] == 'client':
-            # Для клиента проверяем, что это его запись
             cur.execute("SELECT id_client FROM clients LIMIT 1")
             client_id_result = cur.fetchone()
             if client_id_result:
@@ -782,7 +759,6 @@ def cancel_booking(booking_id):
                 flash('Вы не можете отменить эту запись')
                 return redirect(url_for('bookings_list'))
         
-        # Отменяем запись
         cur.execute("""
             UPDATE bookings 
             SET booking_status = 'отменил' 
@@ -801,7 +777,6 @@ def cancel_booking(booking_id):
     
     return redirect(url_for('bookings_list'))
 
-# Маршруты для отчетов
 @app.route('/reports/financial')
 @role_required(['manager', 'admin'])
 def financial_report():
@@ -813,7 +788,6 @@ def financial_report():
     
     cur = conn.cursor()
     
-    # Общая выручка
     cur.execute("SELECT SUM(payment_amount) FROM subscription_purchase")
     total_revenue = cur.fetchone()[0] or 0
     
@@ -848,7 +822,6 @@ def financial_report():
     cur.close()
     conn.close()
     
-    # Форматируем месяцы
     months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
               'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
     formatted_monthly_data = []
@@ -913,12 +886,10 @@ def switch_role():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    # Проверяем подключение к БД при запуске
     print("=" * 50)
     print("Запуск приложения фитнес-клуба")
     print("=" * 50)
     
-    # Тестируем подключение как admin_user
     try:
         config = BASE_DB_CONFIG.copy()
         config['user'] = 'admin_user'
@@ -931,7 +902,6 @@ if __name__ == '__main__':
         print(f"✅ Подключение к БД как admin_user установлено")
         print(f"📊 Тренеров в базе: {trainer_count}")
         
-        # Проверяем доступные пользователи
         print("\n👤 Доступные пользователи для входа:")
         print("-" * 40)
         for pg_user, role in USER_ROLES.items():
